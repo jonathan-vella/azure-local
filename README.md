@@ -6,15 +6,15 @@ This repository contains comprehensive documentation for deploying and managing 
 
 This documentation repository is organized into service-specific sections, each covering deployment, sizing, best practices, and operational guidance for a specific Azure service on Azure Local:
 
-- **[AKS on Azure Local](./aks-on-azure-local/README.md)**: Documentation for deploying and managing Azure Kubernetes Service (AKS) on Azure Local environments.
-- **[AVD on Azure Local](./avd-on-azure-local/README.md)**: Documentation for deploying and managing Azure Virtual Desktop (AVD) on Azure Local environments.
-- **[SQL MI on Azure Local](./sqlmi-on-azure-local/README.md)**: Documentation for deploying and managing Azure Arc-enabled SQL Managed Instance on Azure Local environments.
+- 🐳 **[AKS on Azure Local](./aks-on-azure-local/README.md)**: Documentation for deploying and managing Azure Kubernetes Service (AKS) on Azure Local environments.
+- 🖥️ **[AVD on Azure Local](./avd-on-azure-local/README.md)**: Documentation for deploying and managing Azure Virtual Desktop (AVD) on Azure Local environments.
+- 🗄️ **[SQL MI on Azure Local](./sqlmi-on-azure-local/README.md)**: Documentation for deploying and managing Azure Arc-enabled SQL Managed Instance on Azure Local environments.
 
 ## Documentation Contents
 
 Each service section includes:
 
-### Sizing Documentation
+### 📏 Sizing Documentation
 - Workload analysis and categorization
 - Infrastructure considerations
 - High availability and disaster recovery planning
@@ -23,19 +23,19 @@ Each service section includes:
 - Capacity planning worksheets
 - Real-world sizing examples
 
-### Best Practices
+### ⭐ Best Practices
 - Network configuration
 - Storage recommendations
 - Service-specific configuration guidance
 - Performance optimization
 - Security considerations
 
-### Tools
+### 🛠️ Tools
 - PowerShell calculators for resource sizing
 - Resource planning tools
 - Deployment scripts and templates
 
-## Getting Started
+## 🚀 Getting Started
 
 To get started with Azure Local documentation:
 
@@ -44,14 +44,14 @@ To get started with Azure Local documentation:
 3. Start with the README.md file for an overview
 4. Use the SUMMARY.md file for structured navigation through all documentation
 
-## Prerequisites
+## ✅ Prerequisites
 
 - Azure Local environment or Azure Stack HCI
 - Azure subscription for Arc integration
 - Appropriate licenses for the services being deployed
 - Network connectivity to Azure (for Arc-enabled services)
 
-## Contribution Guidelines
+## 🤝 Contribution Guidelines
 
 Contributions to improve the documentation are welcome! Please follow these steps:
 
@@ -60,10 +60,10 @@ Contributions to improve the documentation are welcome! Please follow these step
 3. Make your changes
 4. Submit a pull request with a clear description of your improvements
 
-## License
+## 📄 License
 
 This project is licensed under the terms specified in the [LICENSE](./LICENSE) file.
 
-## Support
+## 💬 Support
 
 For questions or issues related to this documentation, please create an issue in this repository.
