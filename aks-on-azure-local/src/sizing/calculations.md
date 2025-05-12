@@ -1,8 +1,71 @@
-# Contents of /azure-local-kubernetes-docs/azure-local-kubernetes-docs/src/sizing/calculations.md
+# Concrete Sizing Methodology for AKS on Azure Local
 
-## Concrete Sizing Methodology for AKS on Azure Local
+This document provides detailed guidance on sizing AKS clusters on Azure Local, including VM size selection, scaling calculations, and resource planning.
 
-### Virtual Machine Size Calculations
+## Virtual Machine Size Calculations
+
+### Default VM Sizes for AKS on Azure Local
+
+AKS on Azure Local uses the following default VM sizes:
+
+| Component | Default VM Size | Specifications |
+|-----------|----------------|----------------|
+| AKS Arc control plane nodes | Standard_A4_v2 | 4 vCPUs, 8 GB RAM |
+| AKS Arc Linux worker node | Standard_A4_v2 | 4 vCPUs, 8 GB RAM |
+| AKS Arc Windows worker node | Standard_K8S3_v1 | 4 vCPUs, 6 GB RAM |
+
+### Supported VM Sizes for Control Plane Nodes
+
+You can customize the control plane node size from these supported options:
+
+| VM Size | vCPUs | Memory (GB) |
+|---------|-------|-------------|
+| Standard_K8S3_v1 | 4 | 6 |
+| Standard_A4_v2 | 4 | 8 |
+| Standard_D4s_v3 | 4 | 16 |
+| Standard_D8s_v3 | 8 | 32 |
+
+### Supported VM Sizes for Worker Nodes
+
+Worker nodes can use these VM sizes:
+
+| VM Size | vCPUs | Memory (GB) |
+|---------|-------|-------------|
+| Standard_A2_v2 | 2 | 4 |
+| Standard_K8S3_v1 | 4 | 6 |
+| Standard_A4_v2 | 4 | 8 |
+| Standard_D4s_v3 | 4 | 16 |
+| Standard_D8s_v3 | 8 | 32 |
+| Standard_D16s_v3 | 16 | 64 |
+| Standard_D32s_v3 | 32 | 128 |
+
+### GPU-Enabled VM Sizes
+
+For workloads requiring GPU acceleration, the following sizes are available:
+
+#### Nvidia T4 (NK T4 SKUs)
+| VM Size | GPUs | Memory (GB) | vCPUs | Temp Storage (GB) |
+|---------|------|-------------|-------|-------------------|
+| Standard_NK6 | 1 | 56 | 6 | 340 |
+| Standard_NK12 | 2 | 112 | 12 | 680 |
+
+#### Nvidia A2 (NC2 A2 SKUs)
+| VM Size | GPUs | Memory (GB) | vCPUs | Temp Storage (GB) |
+|---------|------|-------------|-------|-------------------|
+| Standard_NC4_A2 | 1 | 16 | 4 | 150 |
+| Standard_NC8_A2 | 1 | 16 | 8 | 300 |
+| Standard_NC16_A2 | 2 | 32 | 16 | 600 |
+| Standard_NC32_A2 | 2 | 32 | 32 | 1200 |
+
+#### Nvidia A16 (NC2 A16 SKUs)
+| VM Size | GPUs | Memory (GB) | vCPUs | Temp Storage (GB) |
+|---------|------|-------------|-------|-------------------|
+| Standard_NC4_A16 | 1 | 16 | 4 | 150 |
+| Standard_NC8_A16 | 1 | 16 | 8 | 300 |
+| Standard_NC16_A16 | 2 | 32 | 16 | 600 |
+| Standard_NC32_A16 | 2 | 32 | 32 | 1200 |
+
+## Resource Planning Formulas
 
 1. **Base resource calculation**:
    - Total pod CPU requests × (1 + overhead factor) = Required CPU
@@ -26,8 +89,6 @@
    - Target 60-75% resource utilization for CPU/memory to allow for spikes
    - Calculate: Total required resources ÷ (target utilization × resources per node) = Number of nodes
    - **Example**: 16.7 CPU ÷ (0.7 × 8 CPU per node) = 3 nodes minimum
-
-### Minimum Recommended Node Specifications
 
 | Cluster Size | Control Plane Nodes | Worker Nodes | Min CPU/Node | Min RAM/Node | Storage |
 |--------------|---------------------|--------------|--------------|---------------|---------|
