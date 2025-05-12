@@ -1,5 +1,7 @@
 # Azure Local Documentation
 
+> **Disclaimer:** The information provided in this repository is for general guidance only and may not be accurate, complete, or up to date. Neither the contributors, repository owner, nor their employer assume any responsibility or liability for any errors, omissions, or outcomes resulting from the use of this documentation. Use at your own risk.
+
 This repository contains comprehensive documentation for deploying and managing various Azure services on Azure Local environments. Azure Local provides a way to run Azure services on-premises, giving you the benefits of Azure while maintaining data and workloads in your own datacenter.
 
 ## Repository Structure
