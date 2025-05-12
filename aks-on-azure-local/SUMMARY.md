@@ -1,4 +1,9 @@
-# Summary of Azure Local Kubernetes Documentation
+# Summary of AKS on Azure Local Documentation
+
+## Architecture and Components
+- [AKS on Azure Local Architecture](src/sizing/infrastructure-considerations.md)
+- [Scale Requirements](src/sizing/infrastructure-considerations.md#scale-requirements-for-aks-on-azure-local)
+- [IP Address Planning](src/sizing/ip-address-planning.md)
 
 ## Sizing
 - [Understanding the Application Workload](src/sizing/application-workload.md)
@@ -16,7 +21,8 @@
 ## Best Practices
 - [Network Configuration](src/best-practices/network.md)
 - [Storage Configuration](src/best-practices/storage.md)
-- [Node Placement](src/best-practices/node-placement.md)
+- [Node Placement and Availability Sets](src/best-practices/node-placement.md)
+- [Autoscaling](src/best-practices/autoscaling.md)
 - [Resource Governance](src/best-practices/resource-governance.md)
 
 ## Tools

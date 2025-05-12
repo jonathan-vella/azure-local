@@ -1,6 +1,8 @@
-# Azure Local Kubernetes Documentation
+# AKS on Azure Local Documentation
 
-Welcome to the Azure Local Kubernetes Documentation project. This repository provides comprehensive guidance on sizing, best practices, and operational management for deploying Kubernetes on Azure Local environments.
+Welcome to the AKS on Azure Local Documentation project. This repository provides comprehensive guidance on sizing, best practices, and operational management for deploying Azure Kubernetes Service (AKS) enabled by Azure Arc on Azure Local environments.
+
+Azure Kubernetes Service (AKS) on Azure Local is an enterprise-grade Kubernetes container platform. It includes Microsoft-supported core Kubernetes, a purpose-built Windows container host, and a Microsoft-supported Linux container host, with a simple deployment and lifecycle management experience.
 
 ## Project Structure
 

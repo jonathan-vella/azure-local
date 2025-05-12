@@ -1,8 +1,8 @@
 # Contents of /azure-local-kubernetes-docs/azure-local-kubernetes-docs/src/sizing/calculations.md
 
-## Concrete Sizing Methodology
+## Concrete Sizing Methodology for AKS on Azure Local
 
-### Physical Node Calculation Formula
+### Virtual Machine Size Calculations
 
 1. **Base resource calculation**:
    - Total pod CPU requests × (1 + overhead factor) = Required CPU
