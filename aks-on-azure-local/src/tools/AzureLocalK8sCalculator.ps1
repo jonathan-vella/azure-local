@@ -1,14 +1,14 @@
 # AzureLocalK8sCalculator.ps1
-# PowerShell calculator for sizing Kubernetes on Azure Local
-# This script helps determine the right size for Kubernetes clusters running on Azure Local
+# PowerShell calculator for sizing AKS on Azure Local
+# This script helps determine the right size for AKS clusters running on Azure Local
 # by calculating resource requirements based on workload specifications and applying best practices.
 
 # Clear the screen and display welcome message
 Clear-Host
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host "  Azure Local Kubernetes Sizing Calculator" -ForegroundColor Cyan
+Write-Host "  AKS on Azure Local Sizing Calculator" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host "This tool will help you right-size your Kubernetes deployment on Azure Local."
+Write-Host "This tool will help you right-size your AKS deployment on Azure Local."
 Write-Host "Please provide the requested information about your workloads and requirements."
 Write-Host ""
 
@@ -30,11 +30,11 @@ function Get-ValidatedInput {
     )
     
     do {
-        $input = Read-Host "$prompt [Default: $default]"
-        if ([string]::IsNullOrWhiteSpace($input)) { $input = $default }
+        $userInput = Read-Host "$prompt [Default: $default]"
+        if ([string]::IsNullOrWhiteSpace($userInput)) { $userInput = $default }
         
         try {
-            $value = [double]$input
+            $value = [double]$userInput
             if ($value -lt $min -or $value -gt $max) {
                 Write-Host "Please enter a value between $min and $max" -ForegroundColor Yellow
                 $isValid = $false
@@ -60,11 +60,11 @@ function Get-ValidatedIntInput {
     )
     
     do {
-        $input = Read-Host "$prompt [Default: $default]"
-        if ([string]::IsNullOrWhiteSpace($input)) { $input = $default }
+        $userInput = Read-Host "$prompt [Default: $default]"
+        if ([string]::IsNullOrWhiteSpace($userInput)) { $userInput = $default }
         
         try {
-            $value = [int]$input
+            $value = [int]$userInput
             if ($value -lt $min -or $value -gt $max) {
                 Write-Host "Please enter a value between $min and $max" -ForegroundColor Yellow
                 $isValid = $false
@@ -159,15 +159,34 @@ $memoryPerNode = Get-ValidatedInput "Available memory per worker node (GB)" 4 10
 $controlPlaneCpuPerNode = Get-ValidatedInput "Available CPU cores per control plane node" 1 128 4
 $controlPlaneMemoryPerNode = Get-ValidatedInput "Available memory per control plane node (GB)" 4 1024 16
 
+# Define supported VM sizes
+$supportedControlPlaneVMSizes = @(
+    @{ Name = "Standard_K8S3_v1"; CPU = 4; Memory = 6 },
+    @{ Name = "Standard_A4_v2"; CPU = 4; Memory = 8 },
+    @{ Name = "Standard_D4s_v3"; CPU = 4; Memory = 16 },
+    @{ Name = "Standard_D8s_v3"; CPU = 8; Memory = 32 }
+)
+
+$supportedWorkerVMSizes = @(
+    @{ Name = "Standard_A2_v2"; CPU = 2; Memory = 4 },
+    @{ Name = "Standard_K8S3_v1"; CPU = 4; Memory = 6 },
+    @{ Name = "Standard_A4_v2"; CPU = 4; Memory = 8 },
+    @{ Name = "Standard_D4s_v3"; CPU = 4; Memory = 16 },
+    @{ Name = "Standard_D8s_v3"; CPU = 8; Memory = 32 },
+    @{ Name = "Standard_D16s_v3"; CPU = 16; Memory = 64 },
+    @{ Name = "Standard_D32s_v3"; CPU = 32; Memory = 128 }
+)
+
 # Calculate resource requirements
 
 # Calculate required resources with system overhead
 $requiredCpuWithOverhead = $totalWorkloadCpu * (1 + $overheadFactor)
 $requiredMemoryWithOverhead = $totalWorkloadMemory * (1 + $overheadFactor)
 
-# Add control plane resources
-$controlPlaneCpu = $controlPlaneNodeCount * 2  # 2 vCPUs per control plane node
-$controlPlaneMemory = $controlPlaneNodeCount * 4  # 4 GB per control plane node
+# Set control plane VM resources based on defaults for AKS on Azure Local
+# Default for control plane is Standard_A4_v2 (4 vCPU, 8 GB)
+$controlPlaneCpu = $controlPlaneNodeCount * 4  # 4 vCPUs per control plane node
+$controlPlaneMemory = $controlPlaneNodeCount * 8  # 8 GB per control plane node
 
 # Add Arc components
 $arcResourceCpu = $totalWorkloadCpu * $arcOverhead
@@ -177,9 +196,9 @@ $arcResourceMemory = $totalWorkloadMemory * $arcOverhead
 $haAdjustedCpu = $requiredCpuWithOverhead * $haFactor
 $haAdjustedMemory = $requiredMemoryWithOverhead * $haFactor
 
-# Total required cluster CPU and Memory
-$totalRequiredCpu = $haAdjustedCpu + $controlPlaneCpu + $arcResourceCpu
-$totalRequiredMemory = $haAdjustedMemory + $controlPlaneMemory + $arcResourceMemory
+# Track resource calculations for reporting
+$clusterRequiredCpu = $haAdjustedCpu + $controlPlaneCpu + $arcResourceCpu
+$clusterRequiredMemory = $haAdjustedMemory + $controlPlaneMemory + $arcResourceMemory
 
 # Calculate required nodes based on available resources and target utilization
 $requiredWorkerNodesForCpu = [math]::Ceiling($haAdjustedCpu / ($cpuPerNode * $targetUtilization))
@@ -211,16 +230,30 @@ $totalWorkerOsStorage = $requiredWorkerNodes * $osStoragePerWorkerNode
 $totalWorkerDataStorage = ($requiredWorkerNodes * $dataStoragePerWorkerNode) + $additionalDataStorage
 $totalStorageRequired = $totalControlPlaneStorage + $totalWorkerOsStorage + $totalWorkerDataStorage
 
+# Find recommended VM sizes based on requirements
+$recommendedControlPlaneSize = $supportedControlPlaneVMSizes | Where-Object { $_.CPU -ge $controlPlaneCpuPerNode -and $_.Memory -ge $controlPlaneMemoryPerNode } | Sort-Object -Property @{Expression="CPU"; Ascending=$true}, @{Expression="Memory"; Ascending=$true} | Select-Object -First 1
+if (-not $recommendedControlPlaneSize) {
+    $recommendedControlPlaneSize = $supportedControlPlaneVMSizes | Sort-Object -Property @{Expression="CPU"; Ascending=$false}, @{Expression="Memory"; Ascending=$false} | Select-Object -First 1
+    Write-Host "Warning: No control plane VM size matches your requirements. Using largest available size." -ForegroundColor Yellow
+}
+
+$recommendedWorkerSize = $supportedWorkerVMSizes | Where-Object { $_.CPU -ge $cpuPerNode -and $_.Memory -ge $memoryPerNode } | Sort-Object -Property @{Expression="CPU"; Ascending=$true}, @{Expression="Memory"; Ascending=$true} | Select-Object -First 1
+if (-not $recommendedWorkerSize) {
+    $recommendedWorkerSize = $supportedWorkerVMSizes | Sort-Object -Property @{Expression="CPU"; Ascending=$false}, @{Expression="Memory"; Ascending=$false} | Select-Object -First 1
+    Write-Host "Warning: No worker VM size matches your requirements. Using largest available size." -ForegroundColor Yellow
+}
+
 # Output the results
 Clear-Host
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host "  Azure Local Kubernetes Sizing Results" -ForegroundColor Cyan
+Write-Host "  AKS on Azure Local Sizing Results" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host ""
 
+Write-Host ""
 Write-Host "Workload Summary:" -ForegroundColor Green
 Write-Host "--------------------------------"
-Write-Host "Total Application Pods: $totalPodCount"
+$podCountMessage = "Total Application Pods: $totalPodCount"
+Write-Host $podCountMessage
 Write-Host "Raw Application CPU Requirements: $($totalWorkloadCpu.ToString("0.00")) cores"
 Write-Host "Raw Application Memory Requirements: $($totalWorkloadMemory.ToString("0.00")) GB"
 Write-Host ""
@@ -235,8 +268,10 @@ Write-Host ""
 
 Write-Host "Virtual Machine Requirements:" -ForegroundColor Green
 Write-Host "--------------------------------"
-Write-Host "Control Plane VM Specs: $($controlPlaneCpuPerNode) vCPU, $($controlPlaneMemoryPerNode) GB RAM per node"
-Write-Host "Worker VM Specs: $($cpuPerNode) vCPU, $($memoryPerNode) GB RAM per node"
+Write-Host "Recommended Control Plane VM Size: $($recommendedControlPlaneSize.Name) ($($recommendedControlPlaneSize.CPU) vCPU, $($recommendedControlPlaneSize.Memory) GB RAM)"
+Write-Host "Recommended Worker VM Size: $($recommendedWorkerSize.Name) ($($recommendedWorkerSize.CPU) vCPU, $($recommendedWorkerSize.Memory) GB RAM)"
+Write-Host "Total CPU Requirement: $($clusterRequiredCpu.ToString("0.00")) vCPU cores"
+Write-Host "Total Memory Requirement: $($clusterRequiredMemory.ToString("0.00")) GB RAM"
 Write-Host "Total VM CPU: $($totalVmCpu.ToString("0.00")) vCPU cores"
 Write-Host "Total VM Memory: $($totalVmMemory.ToString("0.00")) GB"
 Write-Host ""
@@ -255,25 +290,25 @@ Write-Host "Worker Data Storage: $($totalWorkerDataStorage.ToString("0.00")) GB"
 Write-Host "Total Storage Required: $($totalStorageRequired.ToString("0.00")) GB"
 Write-Host ""
 
-Write-Host "Recommended Azure Local Configuration:" -ForegroundColor Cyan
+Write-Host "Recommended AKS on Azure Local Configuration:" -ForegroundColor Cyan
 Write-Host "====================================================" -ForegroundColor Cyan
-Write-Host "Control Plane VM Size: $($controlPlaneCpuPerNode) vCPU, $($controlPlaneMemoryPerNode)GB RAM"
-Write-Host "Worker VM Size: $($cpuPerNode) vCPU, $($memoryPerNode)GB RAM"
+Write-Host "Control Plane VM Size: $($recommendedControlPlaneSize.Name) ($($recommendedControlPlaneSize.CPU) vCPU, $($recommendedControlPlaneSize.Memory)GB RAM)"
+Write-Host "Worker VM Size: $($recommendedWorkerSize.Name) ($($recommendedWorkerSize.CPU) vCPU, $($recommendedWorkerSize.Memory)GB RAM)"
 Write-Host "Total Host Capacity Needed: $($totalPhysicalCpu.ToString("0.00")) CPU cores, $($totalPhysicalMemory.ToString("0.00"))GB RAM"
 Write-Host "Storage Pool Size: $($totalStorageRequired.ToString("0.00"))GB"
 Write-Host ""
 
 Write-Host "NOTE: This is an estimate. Actual requirements may vary based on workload characteristics."
 Write-Host "Consider factors such as network I/O, disk I/O, and specific application needs when finalizing sizing."
+Write-Host "Remember: AKS on Azure Local supports a maximum of 64 nodes per node pool and 16 node pools per cluster."
 
 # Option to save results to a file
 $saveToFile = Read-Host "Would you like to save these results to a file? (y/n) [Default: y]"
 if ($saveToFile -ne "n") {
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
     $outputFile = "AzureLocalK8sSizing_$timestamp.txt"
-    
-    "====================================================" | Out-File $outputFile
-    "  Azure Local Kubernetes Sizing Results" | Out-File $outputFile -Append
+      "====================================================" | Out-File $outputFile
+    "  AKS on Azure Local Sizing Results" | Out-File $outputFile -Append
     "====================================================" | Out-File $outputFile -Append
     "" | Out-File $outputFile -Append
     
@@ -291,11 +326,10 @@ if ($saveToFile -ne "n") {
     "Worker Nodes Required: $requiredWorkerNodes" | Out-File $outputFile -Append
     "Total Node Count: $($controlPlaneNodeCount + $requiredWorkerNodes)" | Out-File $outputFile -Append
     "" | Out-File $outputFile -Append
-    
-    "Virtual Machine Requirements:" | Out-File $outputFile -Append
+      "Virtual Machine Requirements:" | Out-File $outputFile -Append
     "--------------------------------" | Out-File $outputFile -Append
-    "Control Plane VM Specs: $($controlPlaneCpuPerNode) vCPU, $($controlPlaneMemoryPerNode) GB RAM per node" | Out-File $outputFile -Append
-    "Worker VM Specs: $($cpuPerNode) vCPU, $($memoryPerNode) GB RAM per node" | Out-File $outputFile -Append
+    "Recommended Control Plane VM Size: $($recommendedControlPlaneSize.Name) ($($recommendedControlPlaneSize.CPU) vCPU, $($recommendedControlPlaneSize.Memory) GB RAM)" | Out-File $outputFile -Append
+    "Recommended Worker VM Size: $($recommendedWorkerSize.Name) ($($recommendedWorkerSize.CPU) vCPU, $($recommendedWorkerSize.Memory) GB RAM)" | Out-File $outputFile -Append
     "Total VM CPU: $($totalVmCpu.ToString("0.00")) vCPU cores" | Out-File $outputFile -Append
     "Total VM Memory: $($totalVmMemory.ToString("0.00")) GB" | Out-File $outputFile -Append
     "" | Out-File $outputFile -Append
@@ -313,19 +347,19 @@ if ($saveToFile -ne "n") {
     "Worker Data Storage: $($totalWorkerDataStorage.ToString("0.00")) GB" | Out-File $outputFile -Append
     "Total Storage Required: $($totalStorageRequired.ToString("0.00")) GB" | Out-File $outputFile -Append
     "" | Out-File $outputFile -Append
-    
-    "Recommended Azure Local Configuration:" | Out-File $outputFile -Append
+      "Recommended AKS on Azure Local Configuration:" | Out-File $outputFile -Append
     "====================================================" | Out-File $outputFile -Append
-    "Control Plane VM Size: $($controlPlaneCpuPerNode) vCPU, $($controlPlaneMemoryPerNode)GB RAM" | Out-File $outputFile -Append
-    "Worker VM Size: $($cpuPerNode) vCPU, $($memoryPerNode)GB RAM" | Out-File $outputFile -Append
+    "Control Plane VM Size: $($recommendedControlPlaneSize.Name) ($($recommendedControlPlaneSize.CPU) vCPU, $($recommendedControlPlaneSize.Memory)GB RAM)" | Out-File $outputFile -Append
+    "Worker VM Size: $($recommendedWorkerSize.Name) ($($recommendedWorkerSize.CPU) vCPU, $($recommendedWorkerSize.Memory)GB RAM)" | Out-File $outputFile -Append
     "Total Host Capacity Needed: $($totalPhysicalCpu.ToString("0.00")) CPU cores, $($totalPhysicalMemory.ToString("0.00"))GB RAM" | Out-File $outputFile -Append
     "Storage Pool Size: $($totalStorageRequired.ToString("0.00"))GB" | Out-File $outputFile -Append
     "" | Out-File $outputFile -Append
     
     "NOTE: This is an estimate. Actual requirements may vary based on workload characteristics." | Out-File $outputFile -Append
     "Consider factors such as network I/O, disk I/O, and specific application needs when finalizing sizing." | Out-File $outputFile -Append
+    "Remember: AKS on Azure Local supports a maximum of 64 nodes per node pool and 16 node pools per cluster." | Out-File $outputFile -Append
     
     Write-Host "Results saved to: $outputFile" -ForegroundColor Green
 }
 
-Write-Host "Thank you for using the Azure Local Kubernetes Sizing Calculator!"
+Write-Host "Thank you for using the AKS on Azure Local Sizing Calculator!"
