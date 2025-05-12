@@ -14,6 +14,10 @@ The documentation is organized into several key sections:
   - Operational overhead and management
   - Azure integration and services
   - Concrete sizing calculations
+  - Practical sizing examples
+
+- **Tools**: Practical tools to assist in planning and managing your deployment:
+  - [PowerShell Sizing Calculator](./src/tools/AzureLocalK8sCalculator.ps1): An interactive script that guides you through the process of properly sizing your Azure Local Kubernetes environment based on your specific workload requirements
   - Storage performance recommendations
   - Capacity planning worksheets
   - Sizing examples for various applications

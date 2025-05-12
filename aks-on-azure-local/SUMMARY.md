@@ -21,6 +21,7 @@
 
 ## Tools
 - [Resource Calculation Tools](src/tools/resource-calculators.md)
+- [PowerShell Sizing Calculator](src/tools/AzureLocalK8sCalculator.ps1)
 
 ## Images
 - Images related to the documentation can be found in the [images](src/images) directory.
